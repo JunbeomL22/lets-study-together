@@ -5,3 +5,14 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+anyhow = "1.0"
+criterion = "0.3"
+
+[[bench]]
+name = "float_arithematics"
+harness = false
+
+[members]
+["examples/app1"]
