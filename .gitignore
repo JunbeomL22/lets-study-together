@@ -1,0 +1,8 @@
+*.pcap
+*.log
+*.dat
+*.csv
+*.txt
+
+vendor/
+target/

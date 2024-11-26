@@ -1,0 +1,10 @@
+[package]
+name = "js"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common = { path = "../common" }
+
+[dev-dependencies]
+criterion = "0.5"
