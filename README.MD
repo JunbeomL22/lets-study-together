@@ -37,7 +37,7 @@ pub struct Dummy {
 }
 ```
 
-First, investigate how much memory this structure actually uses. Then implement std::ops::Mul for it and compare multiplication times between Vec<f64> and Vec<Dummy>. The performance difference might be significant - can you figure out why?
+First, investigate how much memory this structure actually uses. Then implement std::ops::Mul for it and compare multiplication times between Vec\<f64\> and Vec\<Dummy\>. The performance difference might be significant - can you figure out why?
 
 ## 4. Working with Timestamps
 Time is crucial in trading systems. Compare how long it takes to get the current time using different approaches: chrono, time, and std. Then try using quanta for high-precision timing and think about how to create Unix nano timestamps with it.
