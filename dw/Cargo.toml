@@ -5,6 +5,8 @@ edition = "2021"
 
 [dependencies]
 common = { path = "../common" }
+csv = "1.2"
+encoding_rs = "0.8"
 
 [dev-dependencies]
 criterion = "0.5"
