@@ -293,6 +293,7 @@ dependencies = [
  "criterion 0.5.1",
  "csv",
  "encoding_rs",
+ "pcap",
 ]
 
 [[package]]
