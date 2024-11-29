@@ -1,140 +1,145 @@
-use pcap::Capture;
+use crate::PayloadParser::ParsedValue;
 use crate::payload_field::PayloadField;
+use pcap::Packet;
+use crate::PayloadParser;
 
-#[derive(Debug)]
-pub enum ParsedValue {
-   Double(f64),
-   Integer(i32),
-   Text(String),
+pub struct PacketAnalysisResult {
+    pub non_zero_ratio: f64,
+    pub average_23: f64,
+    pub average_24: f64,
+    pub mid_prices: Vec<f64>,
 }
 
-pub struct PacketParser {
-   fields: Vec<PayloadField>,
-   skip_count: usize,
-   max_count: usize,
-}
+pub struct PacketAnalyzer;
 
-impl PacketParser {
-   pub fn new(csv_path: &str, skip_count: usize, max_count: usize) -> Result<Self, Box<dyn std::error::Error>> {
-       let fields = PayloadField::load_from_csv(csv_path)?;
-       Ok(PacketParser {
-           fields,
-           skip_count,
-           max_count,
-       })
-   }
+impl PacketAnalyzer {
+    pub fn analyze_packets(
+        packets: &[Packet],
+        fields: &[PayloadField],
+        idx_23: usize,
+        idx_24: usize,
+    ) -> PacketAnalysisResult {
+        let mut count_non_zero = 0;
+        let mut sum_23 = 0.0;
+        let mut sum_24 = 0.0;
+        let mut mid_prices = Vec::new();
 
-   pub fn parse_pcap(&self, pcap_path: &str, field_idx: usize) -> Result<Vec<ParsedValue>, Box<dyn std::error::Error>> {
-       let mut capture = Capture::from_file(pcap_path)?;
-       let mut parsed_values = Vec::new();
-       let mut processed_count = 0;
-       let mut skip_num = 0;
+        for packet in packets {
+            if let (Some(value_23), Some(value_24)) = (
+                PayloadParser::parse_packet(packet, fields, idx_23),
+                PayloadParser::parse_packet(packet, fields, idx_24),
+            ) {
+                // Extract numerical values if they are Double or Integer
+                let value_23_num = match value_23 {
+                    ParsedValue::Double(v) => v,
+                    ParsedValue::Integer(v) => v as f64,
+                    _ => continue,
+                };
 
-       while let Ok(packet) = capture.next_packet() {
-           if skip_num < self.skip_count {
-               skip_num += 1;
-               continue;
-           }
+                let value_24_num = match value_24 {
+                    ParsedValue::Double(v) => v,
+                    ParsedValue::Integer(v) => v as f64,
+                    _ => continue,
+                };
 
-           if packet.data.len() > 42 {
-               if let Some(parsed_value) = self.parse_packet(&packet, field_idx) {
-                   parsed_values.push(parsed_value);
-                   processed_count += 1;
+                // Check if both values are non-zero
+                if value_23_num != 0.0 || value_24_num != 0.0 {
+                    count_non_zero += 1;
+                    sum_23 += value_23_num;
+                    sum_24 += value_24_num;
 
-                   if processed_count >= self.max_count {
-                       break;
-                   }
-               }
-           }
-       }
+                    // Calculate mid price and store
+                    let mid_price = (value_23_num + value_24_num) / 2.0;
+                    mid_prices.push(mid_price);
+                }
+            }
+        }
 
-       Ok(parsed_values)
-   }
+        let total_packets = packets.len() as f64;
+        let non_zero_ratio = if total_packets > 0.0 {
+            count_non_zero as f64 / total_packets
+        } else {
+            0.0
+        };
 
-   fn parse_packet(&self, packet: &pcap::Packet, field_idx: usize) -> Option<ParsedValue> {
-       let field = &self.fields[field_idx];
-       let payload = &packet.data[42..];
-       
-       if payload.len() < field.cumulative_length as usize {
-           return None;
-       }
+        let average_23 = if count_non_zero > 0 {
+            sum_23 / count_non_zero as f64
+        } else {
+            0.0
+        };
 
-       let data = &payload[field.start_point as usize..field.cumulative_length as usize];
-       Some(self.parse_data(data, &field.data_type))
-   }
+        let average_24 = if count_non_zero > 0 {
+            sum_24 / count_non_zero as f64
+        } else {
+            0.0
+        };
 
-   fn parse_data(&self, data: &[u8], data_type: &str) -> ParsedValue {
-       match data_type {
-           "Double" => ParsedValue::Double(self.bytes_to_f64(data)),
-           "Int" => ParsedValue::Integer(self.bytes_to_i32(data)),
-           _ => ParsedValue::Text(self.bytes_to_string(data)),
-       }
-   }
-
-   fn bytes_to_string(&self, bytes: &[u8]) -> String {
-       bytes.iter()
-           .map(|&b| b as char)
-           .collect::<String>()
-   }
-
-   fn bytes_to_f64(&self, bytes: &[u8]) -> f64 {
-       let mut result = 0.0;
-       let mut is_negative = false;
-       let mut i = 0;
-       
-       if bytes[0] == b'-' {
-           is_negative = true;
-           i = 1;
-       }
-
-       while i < bytes.len() && bytes[i].is_ascii_digit() {
-           result = result * 10.0 + (bytes[i] - b'0') as f64;
-           i += 1;
-       }
-
-       if i < bytes.len() && bytes[i] == b'.' {
-           i += 1;
-           let mut decimal = 0.1;
-           while i < bytes.len() && bytes[i].is_ascii_digit() {
-               result += (bytes[i] - b'0') as f64 * decimal;
-               decimal *= 0.1;
-               i += 1;
-           }
-       }
-
-       if is_negative { -result } else { result }
-   }
-
-   fn bytes_to_i32(&self, bytes: &[u8]) -> i32 {
-       let mut result = 0;
-       let mut is_negative = false;
-       let mut i = 0;
-
-       if bytes[0] == b'-' {
-           is_negative = true;
-           i = 1;
-       }
-
-       while i < bytes.len() && bytes[i].is_ascii_digit() {
-           result = result * 10 + (bytes[i] - b'0') as i32;
-           i += 1;
-       }
-
-       if is_negative { -result } else { result }
-   }
+        PacketAnalysisResult {
+            non_zero_ratio,
+            average_23,
+            average_24,
+            mid_prices,
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-   use super::*;
+    use super::*;
+    use crate::payload_field::PayloadField;
+    use pcap::Capture;
+    use std::fs::File;
+    use std::io::{self, Write};
 
-   #[test]
-   fn test_packet_parser() -> Result<(), Box<dyn std::error::Error>> {
-       let parser = PacketParser::new("data/BF606F.csv", 500, 20)?;
-       let results = parser.parse_pcap("data/USD_Fwd_data.pcap", 8)?;
-       
-       assert!(!results.is_empty());
-       println!("Parsed values: {:#?}", results);
-       Ok(())
-   }
+    #[test]
+    fn test_analyze_packets() -> Result<(), Box<dyn std::error::Error>> {
+        let csv_path = "data/BF606F.csv";
+        let pcap_path = "data/USD_Fwd_data.pcap";
+
+        if !std::path::Path::new(csv_path).exists() || !std::path::Path::new(pcap_path).exists() {
+            println!("Required file(s) not found.");
+            return Ok(());
+        }
+
+        let fields = PayloadField::load_from_csv(csv_path)?;
+        
+        let mut capture = Capture::from_file(pcap_path)?;
+
+        let mut packets = Vec::new();
+
+        while let Ok(packet) = capture.next_packet() {
+            packets.push(packet);
+        }
+
+        let idx_23 = 23;
+        let idx_24 = 24;
+
+        let analyze_packets = PacketAnalyzer::analyze_packets(&packets, &fields, idx_23, idx_24);
+        let result = analyze_packets;
+
+        // Print basic statistics
+        println!("Non-zero Ratio: {:.2}%", result.non_zero_ratio * 100.0);
+        println!("Average of 23: {:.2}", result.average_23);
+        println!("Average of 24: {:.2}", result.average_24);
+
+        // Print first 10 mid prices
+        let display_count = 10;
+        println!("Mid Prices (first {} entries):", display_count);
+        for (i, price) in result.mid_prices.iter().take(display_count).enumerate() {
+            println!("{:2}. {:.6}", i + 1, price);
+        }
+
+        // Save all mid prices to mid_price.txt
+        save_mid_prices_to_file(&result.mid_prices, "mid_price.txt")?;
+
+        Ok(())
+    }
+
+    fn save_mid_prices_to_file(mid_prices: &[f64], filename: &str) -> io::Result<()> {
+        let mut file = File::create(filename)?;
+        for price in mid_prices {
+            writeln!(file, "{:.6}", price)?;
+        }
+        Ok(())
+    }
 }
