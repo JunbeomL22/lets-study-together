@@ -10,7 +10,11 @@ pcap = "2.2"
 
 [dev-dependencies]
 anyhow = "1.0"
-criterion = "0.3"
+criterion = "0.5"
+mongodb = "3.1"
+encoding_rs = "0.8"
+
+
 
 [[bench]]
 name = "float_arithematics"
