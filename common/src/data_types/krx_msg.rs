@@ -148,19 +148,33 @@ mod binary_serde {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use struson::reader::{JsonStreamReader, JsonReader};
 
     #[test]
-    fn test_deserialized_krx_msg() {
+    fn test_deserialized_krx_msg() -> anyhow::Result<()> {
         // read from multiasset_db.krx_msg.json
         let file_name = "../data/multiasset_db.krx_msg.json";
         let file_path = format!("{}", file_name);
         let file = std::fs::File::open(file_path).unwrap();
         let reader = std::io::BufReader::new(file);
+        /* non-streaming 
         let krx_msgs: Vec<KrxMsg> = serde_json::from_reader(reader).unwrap();
-
         for krx_msg in krx_msgs {
             println!("{}", krx_msg);
         }
+        */
+        // streaming
+        let mut stream_reader = JsonStreamReader::new(reader);
+        stream_reader.begin_array()?;
+        
+        while stream_reader.has_next()? {
+            let krx_msg: KrxMsg = stream_reader.deserialize_next()?;
+            println!("{}", krx_msg);
+        }
+
+        stream_reader.end_array()?;
+        
+        Ok(())
 
     }
 }
