@@ -1,9 +1,6 @@
 use serde::{Serialize, Deserialize};
 use crate::Error as CommonError; // you may want to define your error
-
-
-pub type Real = f64;
-pub type UnixNano = u64;
+use crate::UnixNano;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct HftTimeseries {

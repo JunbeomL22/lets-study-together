@@ -3,7 +3,7 @@ use std::{fmt, str};
 use serde::{Deserialize, Serialize};
 use encoding_rs::EUC_KR;
 use crate::UnixNano;
-use crate::data_type::{
+use crate::data_types::{
     krx_messages_instcode_range,
     krx_message_dist_index_range,
 };
@@ -122,6 +122,7 @@ impl KrxMsg {
         })
     }
 }
+
 mod binary_serde {
     use super::*;
     use serde::{Deserializer, Serializer};
@@ -143,3 +144,24 @@ mod binary_serde {
         Binary::deserialize(deserializer).map(|binary| binary.bytes)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_deserialized_krx_msg() {
+        // read from multiasset_db.krx_msg.json
+        let file_name = "../data/multiasset_db.krx_msg.json";
+        let file_path = format!("{}", file_name);
+        let file = std::fs::File::open(file_path).unwrap();
+        let reader = std::io::BufReader::new(file);
+        let krx_msgs: Vec<KrxMsg> = serde_json::from_reader(reader).unwrap();
+
+        for krx_msg in krx_msgs {
+            println!("{}", krx_msg);
+        }
+
+    }
+}
+
