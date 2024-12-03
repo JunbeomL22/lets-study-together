@@ -1,11 +1,8 @@
 use serde::{Serialize, Deserialize};
 use crate::Error as CommonError; // you may want to define your error
+use crate::UnixNano;
 
-
-pub type Real = f64;
-pub type UnixNano = u64;
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct HftTimeseries {
     pub data: Vec<f64>,
     pub timestamps: Vec<UnixNano>,
@@ -17,15 +14,6 @@ impl HftTimeseries {
             return Err(CommonError::LengthMismatch);
         }
         Ok(HftTimeseries { data, timestamps })
-    }
-}
-
-impl Default for HftTimeseries {
-    fn default() -> Self {
-        HftTimeseries {
-            data: Vec::new(),
-            timestamps: Vec::new(),
-        }
     }
 }
 

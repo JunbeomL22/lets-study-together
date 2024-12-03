@@ -40,7 +40,7 @@ impl PacketExtractor {
     
         // Process each packet
         while let Ok(packet) = cap.next_packet() {
-            if self.is_valid_packet(&packet.data) {
+            if self.is_valid_packet(packet.data) {
                 savefile.write(&packet);
             }
         }

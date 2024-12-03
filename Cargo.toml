@@ -1,8 +1,0 @@
-[workspace]
-members = [
-    "js",
-    "dw",
-    "common",
-    "common/examples/app1"
-]
-resolver = "2"

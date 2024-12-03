@@ -3,6 +3,7 @@
 *.dat
 *.csv
 *.txt
+*.json
 
 vendor/
 target/
