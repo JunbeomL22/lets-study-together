@@ -164,6 +164,7 @@ mod binary_serde {
 #[cfg(test)]
 mod tests {
     use super::*;
+<<<<<<< HEAD
     use std::io::BufReader;
     use serde::de::DeserializeSeed;
 
@@ -188,6 +189,35 @@ mod tests {
         })
         .deserialize(&mut deserializer)
         .expect("스트리밍 처리 실패");
+=======
+    use struson::reader::{JsonStreamReader, JsonReader};
+
+    #[test]
+    fn test_deserialized_krx_msg() -> anyhow::Result<()> {
+        // read from multiasset_db.krx_msg.json
+        let file_name = "../data/multiasset_db.krx_msg.json";
+        let file_path = format!("{}", file_name);
+        let file = std::fs::File::open(file_path).unwrap();
+        let reader = std::io::BufReader::new(file);
+        /* non-streaming 
+        let krx_msgs: Vec<KrxMsg> = serde_json::from_reader(reader).unwrap();
+        for krx_msg in krx_msgs {
+            println!("{}", krx_msg);
+        }
+        */
+        // streaming
+        let mut stream_reader = JsonStreamReader::new(reader);
+        stream_reader.begin_array()?;
+        
+        while stream_reader.has_next()? {
+            let krx_msg: KrxMsg = stream_reader.deserialize_next()?;
+            println!("{}", krx_msg);
+        }
+
+        stream_reader.end_array()?;
+        
+        Ok(())
+>>>>>>> 44a4ea3a315723a24529263daf612a63ec3a5535
 
         // 검증
         assert_eq!(first_two_msgs.len(), 2, "첫 두 개의 메시지를 읽어야 합니다");
