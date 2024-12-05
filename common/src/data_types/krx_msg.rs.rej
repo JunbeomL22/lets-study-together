@@ -1,9 +1,0 @@
-diff a/common/src/data_types/krx_msg.rs b/common/src/data_types/krx_msg.rs	(rejected hunks)
-@@ -1,6 +1,6 @@
- use mongodb::bson::{Binary, spec::BinarySubtype};
- use std::{fmt, str};
--use serde::{Deserialize, Serialize};
-+use serde::{Deserialize, Deserializer, Serialize};
- use encoding_rs::EUC_KR;
- use crate::UnixNano;
- use crate::data_types::{

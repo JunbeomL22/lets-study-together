@@ -13,7 +13,7 @@ encoding_rs = "0.8"
 flashlog = "0.2"
 
 [dev-dependencies]
-anyhow = "1.0"
+anyhow = "1.0.92"
 criterion = "0.5"
 struson = {version = "0.6", features = ["serde"]}
 
@@ -23,4 +23,9 @@ name = "float_arithematics"
 harness = false
 
 [members]
-["examples/app1"]
+members = [
+    "examples/app1",
+    "dw"
+]
+
+
