@@ -1,5 +1,5 @@
 pub mod payload_field;
-pub mod PayloadParser;
+pub mod payload_parser;
 
 // common 크레이트에서 data_types를 가져옵니다
 pub use common::data_types;
