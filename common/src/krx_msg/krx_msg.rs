@@ -2,8 +2,8 @@ use mongodb::bson::{Binary, spec::BinarySubtype};
 use std::{fmt, str};
 use serde::{Deserialize, Serialize};
 use encoding_rs::EUC_KR;
-use crate::UnixNano;
-use crate::data_types::{
+use crate::types::timeseries::UnixNano;
+use crate::data_type::{
     krx_messages_instcode_range,
     krx_message_dist_index_range,
 };
@@ -16,8 +16,6 @@ use crate::data_types::{
 /// * `packet_timestamp` - UnixNano (the time when the packet is received)
 /// * `timestamp` - UnixNano (the time when the message is received on the processor)
 /// * `payload` - binary data
-/// 
-/// 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct KrxMsg {
     pub date: i32,
@@ -124,51 +122,54 @@ impl KrxMsg {
         })
     }
 }
+ 
 
-mod binary_serde {
-    use super::*;
-    use serde::{Deserializer, Serializer};
-
-    pub fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        Binary {
-            subtype: BinarySubtype::Generic,
-            bytes: bytes.to_vec(),
-        }.serialize(serializer)
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        Binary::deserialize(deserializer).map(|binary| binary.bytes)
-    }
-}
 
 #[cfg(test)]
+
 mod tests {
     use super::*;
-    use struson::reader::{JsonStreamReader, JsonReader};
 
     #[test]
-    fn test_deserialized_krx_msg() -> anyhow::Result<()> {
-        let file_name = "../data/multiasset_db.krx_msg.json";
-        let file = std::fs::File::open(file_name)?;
-        let reader = std::io::BufReader::new(file);
-        let mut stream_reader = JsonStreamReader::new(reader);
-        
-        stream_reader.begin_array()?;
-        let mut cnt = 0;
-
-        while stream_reader.has_next()? && cnt < 10 {
-            let krx_msg: KrxMsg = stream_reader.deserialize_next()?;
-            println!("{}", krx_msg);
-            cnt += 1;
+    fn read_krx_messages(data_path: &str) -> io::Result<()> {
+        // 데이터 폴더의 파일 경로 생성
+        let file_path = Path::new("data").join(data_path);
+        println!("Reading from: {}", file_path.display());
+    
+        // 파일 열기
+        let file = File::open(file_path)?;
+        let mut reader = BufReader::new(file);
+        let mut contents = String::new();
+        reader.read_to_string(&mut contents)?;
+    
+        // JSON 파싱
+        let json: Value = serde_json::from_str(&contents)
+            .expect("Failed to parse JSON");
+    
+        // JSON이 배열 형태인 경우
+        if let Value::Array(messages) = json {
+    
+            println!("Total messages found: {}", messages.len());
+            println!("Showing first 10 messages:\n");
+    
+            for (i, msg) in messages.iter().take(10).enumerate() {
+                match serde_json::from_value::<KrxMsg>(msg.clone()) {
+                    Ok(krx_msg) => {
+                        println!("Message #{}", i + 1);
+                        println!("{}", krx_msg);
+                        println!("-------------------");
+                    },
+                    Err(e) => {
+                        eprintln!("Failed to parse message #{}: {}", i + 1, e);
+                    }
+                }
+            }
+        } else {
+            eprintln!("JSON is not an array of messages");
         }
-
-        // end_array()를 호출하지 않고 종료
+    
         Ok(())
     }
+    
+
 }
