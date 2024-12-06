@@ -69,37 +69,6 @@ impl PayloadField {
                 start_point,
             };
 
-            /* 
-            // 빈 문자열은 "0"으로 처리하고 공백 제거
-            let length = record.get(4)
-                .and_then(|s| if s.trim().is_empty() { Some("0") } else { Some(s.trim()) })
-                .unwrap_or("0")
-                .parse::<i32>()
-                .unwrap_or(0);
-
-            let cumulative_length = record.get(5)
-                .and_then(|s| if s.trim().is_empty() { Some("0") } else { Some(s.trim()) })
-                .unwrap_or("0")
-                .parse::<i32>()
-                .unwrap_or(0);
-
-            let start_point = record.get(6)
-                .and_then(|s| if s.trim().is_empty() { Some("0") } else { Some(s.trim()) })
-                .unwrap_or("0")
-                .parse::<i32>()
-                .unwrap_or(0);
-
-            let field = PayloadField {
-                korean_name: record.get(0).unwrap_or("").to_string(),
-                item_name: record.get(1).unwrap_or("").to_string(),
-                sub_section: record.get(2).unwrap_or("").to_string(),
-                data_type: record.get(3).unwrap_or("").to_string(),
-                length,
-                cumulative_length,
-                start_point,
-            };
-            */
-
             payload_fields.push(field);
         }
 
