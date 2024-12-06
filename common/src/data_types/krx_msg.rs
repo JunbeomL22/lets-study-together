@@ -148,40 +148,27 @@ mod binary_serde {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::{Deserializer, Value};
-    use serde_json::StreamDeserializer;
-    use std::io::Read;
+    use struson::reader::{JsonStreamReader, JsonReader};
 
     #[test]
-    fn test_deserialized_krx_msg() {
+    fn test_deserialized_krx_msg() -> anyhow::Result<()> {
         // read from multiasset_db.krx_msg.json
         let file_name = "../data/multiasset_db.krx_msg.json";
         let file_path = format!("{}", file_name);
         let file = std::fs::File::open(file_path).unwrap();
         let reader = std::io::BufReader::new(file);
-        /*
-        let krx_msgs: Vec<KrxMsg> = serde_json::from_reader(reader).unwrap();
 
-        for krx_msg in krx_msgs {
+        let mut stream_reader = JsonStreamReader::new(reader);
+        stream_reader.begin_array()?;
+        
+        while stream_reader.has_next()? {
+            let krx_msg: KrxMsg = stream_reader.deserialize_next()?;
             println!("{}", krx_msg);
         }
-        */
 
-        // First parse the opening array bracket
-        let mut stream = serde_json::Deserializer::from_reader(reader).into_iter::<Value>();
+        stream_reader.end_array()?;
         
-        // Now process each array element
-        while let Some(value) = stream.next() {
-            match value {
-                Ok(value) => {
-                    match serde_json::from_value::<KrxMsg>(value) {
-                        Ok(krx_msg) => println!("{}", krx_msg),
-                        Err(e) => eprintln!("Failed to parse KrxMsg: {}", e),
-                    }
-                },
-                Err(e) => eprintln!("Failed to read JSON value: {}", e),
-            }
-        }
+        Ok(())
 
     }
 }
