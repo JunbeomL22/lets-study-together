@@ -110,26 +110,27 @@ pub fn parse_json_db(krx_msg: &KrxMsg, fields: &[PayloadField], field_idx: usize
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use struson::reader::{JsonStreamReader, JsonReader};
     use common::data_types::krx_msg::KrxMsg;
     use pcap::Capture;
+    use anyhow::Context;
 
 
     #[test]
-    fn test_payload_parser() -> Result<(), Box<dyn std::error::Error>> {
-        let csv_path = "data/BF606F_new.csv";
-        let pcap_path = "data/USD_Fwd_data.pcap";
+    fn test_payload_parser() -> anyhow::Result<()> {
+        let current_dir = std::env::current_dir()?;
+        let csv_path = "../data/BF606F_new.csv";
+        let pcap_path = "../data/USD_Fwd_data.pcap";
 
-        // 파일 존재 여부 체크
+        // Jay
+        // In this case, if the csv file or the pcap file does not exist, the program will print an error message and return Ok(()).
+        // when running cargo test, it may not test this part
         if !std::path::Path::new(csv_path).exists() {
-            println!("CSV file not found: {}", csv_path);
-            return Ok(());
+            anyhow::bail!("CSV file not found: {}, current_path: {}", csv_path, current_dir.display());
         }
         if !std::path::Path::new(pcap_path).exists() {
-            println!("PCAP file not found: {}", pcap_path);
-            return Ok(());
+            anyhow::bail!("PCAP file not found: {}, current_path: {}", pcap_path, current_dir.display());
         }
 
         let fields = PayloadField::load_from_csv(csv_path)?;
@@ -181,8 +182,8 @@ mod tests {
         const MAX_SAMPLES: usize = 10;
 
         // 테스트 데이터 준비
-        let json_path = "data/multiasset_db.krx_msg.json";
-        let csv_path = "data/BF606F_new.csv";
+        let json_path = "../data/multiasset_db.krx_msg.json";
+        let csv_path = "../data/BF606F_new.csv";
 
         // 파일 존재 확인
         if !std::path::Path::new(json_path).exists() {
