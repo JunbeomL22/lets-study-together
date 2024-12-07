@@ -13,6 +13,7 @@ pcap = "2.2"
 anyhow = "1.0.92"
 criterion = "0.5"
 struson = {version = "0.6", features = ["serde"]}
+approx = "0.5"
 
 
 

@@ -1,5 +1,5 @@
- // src/payload_parser/mod.rs
- use crate::payload_field::PayloadField;
+// src/payload_parser/mod.rs
+use crate::payload_field::PayloadField;
 
 // common 크레이트에서 직접 가져옵니다
 use common::data_types::krx_msg::KrxMsg;
@@ -13,10 +13,35 @@ pub enum ParsedValue {
     Text(String),
 }
 
+// Jay: why not implment std::fmt::Display for ParsedValue
+impl std::fmt::Display for ParsedValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParsedValue::Double(v) => write!(f, "{:.2}", v),
+            ParsedValue::Integer(v) => write!(f, "{}", v),
+            ParsedValue::Text(v) => write!(f, "{}", v),
+        }
+    }
+}
+
 fn bytes_to_string(bytes: &[u8]) -> String {
     bytes.iter().map(|&b| b as char).collect()
 }
 
+// Jay: I would recommend to bench using crieterion.
+// 1) It looks quite slow. There are multiplication as many as the number of digits in the number.
+// compare with std::parse::<f64>
+// This code deals with one number by one number so it is hard for CPU to optimize it (caching, pipelining, etc.)
+//
+// 2) In parsing, the return type should be Result<T, E> or Option<T>
+// Otherwise, it is hard to fix a bug (e.g., buffer overflow) in the future.
+// Moreover, the caller has to check the return value and handle the error.
+// Low-level function like parsing must be written with very much care, e.g., error handling, testing, and benchmarking.
+//
+// Finally, I strongly suggest not to touch f64 parsing. It is VERY hard to implement it correctly. Just use std::parse.....
+// My first impression is that this code looks safe but very slow. 
+// As soon as you try to optimize it, it will become very complex and error-prone.
+// For safe, reasonably fast, error-reporting float-parser, it is not easy to beat std::parse::<f64>.
 fn bytes_to_f64(bytes: &[u8]) -> f64 {
     let mut result = 0.0;
     let mut is_negative = false;
@@ -49,6 +74,9 @@ fn bytes_to_f64(bytes: &[u8]) -> f64 {
     }
 }
 
+// Jay: 
+// benchmark and compare this with std::parse::<i32>, atoi, biscuit-converter (disclaimer: I am the author of biscuit-converter)
+// compare i32, i64, i128. Notice that cumulative traded value in KRX is 22 digits.
 fn bytes_to_i32(bytes: &[u8]) -> i32 {
     let mut result = 0;
     let mut is_negative = false;
@@ -110,26 +138,26 @@ pub fn parse_json_db(krx_msg: &KrxMsg, fields: &[PayloadField], field_idx: usize
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use struson::reader::{JsonStreamReader, JsonReader};
     use common::data_types::krx_msg::KrxMsg;
     use pcap::Capture;
-
+    use approx::assert_relative_eq;
 
     #[test]
-    fn test_payload_parser() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_payload_parser() -> anyhow::Result<()> {
+        let current_dir = std::env::current_dir()?;
         let csv_path = "data/BF606F_new.csv";
         let pcap_path = "data/USD_Fwd_data.pcap";
 
-        // 파일 존재 여부 체크
+        // Jay
+        // In this case, if the csv file or the pcap file does not exist, the program will print an error message and return Ok(()).
+        // when running cargo test, it may not test this part
         if !std::path::Path::new(csv_path).exists() {
-            println!("CSV file not found: {}", csv_path);
-            return Ok(());
+            anyhow::bail!("CSV file not found: {}, current_path: {}", csv_path, current_dir.display());
         }
         if !std::path::Path::new(pcap_path).exists() {
-            println!("PCAP file not found: {}", pcap_path);
-            return Ok(());
+            anyhow::bail!("PCAP file not found: {}, current_path: {}", pcap_path, current_dir.display());
         }
 
         let fields = PayloadField::load_from_csv(csv_path)?;
@@ -148,6 +176,10 @@ mod tests {
             }
 
             if packet.data.len() > 42 {
+                // Jay: Say I am a co-author (me, Jay), then the number 8 is hard to recognize what it is
+                // Also, think about the situation KRX inseerts or removes a field. Then this hard-coded number must be changed manually.
+                // Are you sure you would remenber where you have to change in your code?
+                // Every line of code should be written under consideration that you have to maintain, fix, modify, or extend it in the future.
                 if let Some(parsed_value) = parse_packet(&packet, &fields, 8) {
                     results.push(parsed_value);
                     processed_count += 1;
@@ -162,11 +194,15 @@ mod tests {
         assert!(!results.is_empty());
         println!("\nParsed Values:");
         for (i, value) in results.iter().enumerate() {
+            // Jay: implement std::fmt::Display for ParsedValue
+            println!("{}: {}", i + 1, value);
+            /* 
             match value {
                 ParsedValue::Double(v) => println!("{:2}. Value: {:.1}", i + 1, v),
                 ParsedValue::Integer(v) => println!("{:2}. Value: {}", i + 1, v),
                 ParsedValue::Text(v) => println!("{:2}. Value: {}", i + 1, v),
             }
+            */
         }
 
         Ok(())
