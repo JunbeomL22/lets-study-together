@@ -17,6 +17,20 @@ pub struct PayloadField {
    pub start_point: i32,
 }
 
+// Jay: why not implment std::fmt::Display for PayloadField
+impl std::fmt::Display for PayloadField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "PayloadFiled")?;
+        writeln!(f, "  Korean name: {}", self.korean_name)?;
+        writeln!(f, "  Item name: {}", self.item_name)?;
+        writeln!(f, "  Sub section: {}", self.sub_section)?;
+        writeln!(f, "  Data type: {}", self.data_type)?;
+        writeln!(f, "  Length: {}", self.length)?;
+        writeln!(f, "  Cumulative length: {}", self.cumulative_length)?;
+        writeln!(f, "  Start point: {}", self.start_point)
+    }
+}
+
 impl PayloadField {
     // Jay
     // Box<dyn Error> is not thread safe.
@@ -85,10 +99,20 @@ mod tests {
    fn test_load_from_csv() -> anyhow::Result<()> {
         let current_dir = std::env::current_dir()?;
         println!("Current dir: {:?}", current_dir);
-        let fields = PayloadField::load_from_csv("../data/BF606F_new.csv")
+        let fields = PayloadField::load_from_csv("data/BF606F_new.csv")
             .map_err(|e| anyhow::anyhow!("Failed to load CSV file: {}", e))?;
         assert!(!fields.is_empty());
         
+        let first = &fields[0];
+        assert_eq!(first.length, 2, "Expected length to be 2, got {}", first.length);
+        assert_eq!(first.cumulative_length, 2);
+        assert_eq!(first.start_point, 0);
+        
+        // Jay: why not implment std::fmt::Display for PayloadField
+        for field in fields.iter() {
+            println!("{}", field);
+        }
+        /* 
         // 디버깅을 위한 출력 추가
         println!("First field contents:");
         println!("Korean name: {}", fields[0].korean_name);
@@ -96,12 +120,7 @@ mod tests {
         println!("Length: {}", fields[0].length);
         println!("Cumulative length: {}", fields[0].cumulative_length);
         println!("Start point: {}", fields[0].start_point);
-        
-        let first = &fields[0];
-        assert_eq!(first.length, 2, "Expected length to be 2, got {}", first.length);
-        assert_eq!(first.cumulative_length, 2);
-        assert_eq!(first.start_point, 0);
-
+        */
         Ok(())
    }
 }
