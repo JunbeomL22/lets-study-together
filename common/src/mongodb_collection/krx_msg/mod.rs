@@ -1,9 +1,11 @@
+pub mod range_helper;
+
 use mongodb::bson::{Binary, spec::BinarySubtype};
 use std::{fmt, str};
 use serde::{Deserialize, Serialize};
 use encoding_rs::EUC_KR;
 use crate::UnixNano;
-use crate::data_types::{
+use crate::mongodb_collection::krx_msg::range_helper::{
     krx_messages_instcode_range,
     krx_message_dist_index_range,
 };
@@ -102,7 +104,16 @@ impl KrxMsg {
                         Ok(distidx) => Some(distidx),
                         Err(_) => {
                             None
-                            
+                            /* there are quite a few messages that are not numbers
+                            // if all whitespace, return None
+                            if clipped.iter().all(|&c| c == 0x20) {
+                                None
+                            } else {
+                                let pay_clone = encoding_rs::EUC_KR.decode(payload).0.to_string();
+                                flashlog::flash_info!("DECODE";"{}: Failed to parse distidx", e; payload = pay_clone);
+                                None
+                            }
+                            */
                         }
                     };
                     res
@@ -122,7 +133,6 @@ impl KrxMsg {
         })
     }
 }
-
 mod binary_serde {
     use super::*;
     use serde::{Deserializer, Serializer};
@@ -131,6 +141,7 @@ mod binary_serde {
     where
         S: Serializer,
     {
+        // Generic/User-defined 바이너리 서브타입 사용
         Binary {
             subtype: BinarySubtype::Generic,
             bytes: bytes.to_vec(),
@@ -153,17 +164,24 @@ mod tests {
     #[test]
     fn test_deserialized_krx_msg() -> anyhow::Result<()> {
         // read from multiasset_db.krx_msg.json
-        let file_name = "../data/multiasset_db.krx_msg.json";
+        let file_name = "data/krx_msg.json";
         let file_path = format!("{}", file_name);
         let file = std::fs::File::open(file_path).unwrap();
         let reader = std::io::BufReader::new(file);
-
+        /* non-streaming 
+        let krx_msgs: Vec<KrxMsg> = serde_json::from_reader(reader).unwrap();
+        for krx_msg in krx_msgs {
+            println!("{}", krx_msg);
+        }
+        */
+        // streaming
         let mut stream_reader = JsonStreamReader::new(reader);
         stream_reader.begin_array()?;
         
         while stream_reader.has_next()? {
             let krx_msg: KrxMsg = stream_reader.deserialize_next()?;
-            println!("{}", krx_msg);
+            assert_eq!(krx_msg.instcode.unwrap().as_str(), "KR4165VC0007");
+            //println!("{}", krx_msg);
         }
 
         stream_reader.end_array()?;
@@ -172,4 +190,3 @@ mod tests {
 
     }
 }
-

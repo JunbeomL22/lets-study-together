@@ -13,6 +13,7 @@ encoding_rs = "0.8"
 flashlog = "0.2"
 
 [dev-dependencies]
+approx = "0.5"
 anyhow = "1.0"
 criterion = "0.5"
 struson = {version = "0.6", features = ["serde"]}

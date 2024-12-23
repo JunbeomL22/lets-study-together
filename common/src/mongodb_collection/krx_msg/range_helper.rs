@@ -1,42 +1,46 @@
-pub mod krx_msg;
-
-use crate::types::index_range::IndexRange;
+use std::ops::Range;
 
 /// If the payload starts with
-/// A3, G7, B6 => Some(IndexRange::new(17, 29)) [quote, quote+trade, trade]
-/// B7 => Some(IndexRange::new(9, 21))  [quote with MM/LP together]
-/// OA => Some(IndexRange::new(15, 27)) [remaining orders]
-/// A6 => Some(IndexRange::new(15, 27))  [market close]
-/// C4 => Some(IndexRange::new(7, 19))  [market open]
-/// H2 => Some(IndexRange::new(5, 17))  [open interest]
-/// H1 => Some(IndexRange::new(21, 33))  [derivative investors]
-/// H6 => Some(IndexRange::new(24, 36))  [underlying bond info of KTBF]
-/// A0 => Some(IndexRange::new(27, 39))  [inst info excluding ELW/ETN]
-pub fn krx_messages_instcode_range(payload: &[u8]) -> Option<IndexRange> {
-    if payload.len() > 5 && (&payload[..5] == b"B6054" || &payload[..5] == b"B6044") {
-        return None;
+/// A3, G7, B6 => Some(Range{start: 17, end: 29}) [quote, quote+trade, trade]
+/// B7 => Some(Range{start: 9, end: 21})  [quote with MM/LP together]
+/// OA => Some(Range{start: 15, end: 27}) [remaining orders]
+/// A6 => Some(Range{start: 15, end: 27})  [market close]
+/// C4 => Some(Range{start: 7, end: 19})  [market open]
+/// H2 => Some(Range{start: 5, end: 17})  [open interest]
+/// H1 => Some(Range{start: 21, end: 33})  [derivative investors]
+/// H6 => Some(Range{start: 24, end: 36})  [underlying bond info of KTBF]
+/// A0 => Some(Range{start: 27, end: 39})  [inst info excluding ELW/ETN]
+/// J9077 => Some(Range{start: 13, end: 25})  [bond issue info]
+pub fn krx_messages_instcode_range(payload: &[u8]) -> Option<Range<usize>> {
+    if payload.len() > 5 {
+        if &payload[..5] == b"B6054" || &payload[..5] == b"B6044" {
+            return None;
+        } else if &payload[..5] == b"J9077" {
+            // [bond issue info]
+            return Some(13..25);
+        }
     }
     match payload.get(0..2) {
         // [quote & trade]
-        Some(b"A3") | Some(b"G7") | Some(b"B6") => Some(IndexRange::new(17, 29)),
+        Some(b"A3") | Some(b"G7") | Some(b"B6") => Some(17..29),
         // [quote with MM/LP together]
-        Some(b"B7") => Some(IndexRange::new(9, 21)),
+        Some(b"B7") => Some(9..21),
         // [remaining orders]
-        Some(b"OA") => Some(IndexRange::new(15, 27)),
+        Some(b"OA") => Some(15..27),
         // [market close]
-        Some(b"A6") => Some(IndexRange::new(15, 27)),
-        // [market open]1
-        Some(b"C4") => Some(IndexRange::new(7, 19)),
+        Some(b"A6") => Some(15..27),
+        // [market open]
+        Some(b"C4") => Some(7..19),
         // [open interest]
-        Some(b"H2") => Some(IndexRange::new(5, 17)),
+        Some(b"H2") => Some(5..17),
         // [derivative investors]
-        Some(b"H1") => Some(IndexRange::new(21, 33)),
+        Some(b"H1") => Some(21..33),
         // [inst info excluding ELW/ETN]
-        Some(b"A0") => Some(IndexRange::new(27, 39)),
+        Some(b"A0") => Some(27..39),
         // [ELW/ETN info]
-        Some(b"A1") => Some(IndexRange::new(13, 25)),
+        Some(b"A1") => Some(13..25),
         // [underlying bond info of KTBF]
-        Some(b"H6") => Some(IndexRange::new(24, 36)),
+        Some(b"H6") => Some(24..36),
         _ => None,
     }
 }
@@ -48,26 +52,23 @@ pub fn krx_messages_instcode_range(payload: &[u8]) -> Option<IndexRange> {
 /// A0 => inst info excluding ELW/ETN
 /// H6 => unserlying bond info of KTBF
 /// B7 => quote with MM/LP together
-pub fn krx_message_dist_index_range(payload: &[u8]) -> Option<IndexRange> {    
+pub fn krx_message_dist_index_range(payload: &[u8]) -> Option<Range<usize>> {    
     if payload.len() < 5 {
         return None;
     }
-
     let trcode: &[u8; 5] = payload[..5].try_into().unwrap();
     if is_a0(trcode) || is_b6(trcode) || is_a3(trcode) || is_g7(trcode) {
-        return Some(IndexRange::new(5, 13));
+        return Some(5..13);
     }
-
     match payload.get(0..2) {
-        //Some(b"A3") | Some(b"G7") | Some(b"B6") => Some(IndexRange::new(5, 13)),
-        Some(b"H2") | Some(b"C1")=> Some(IndexRange::new(17, 23)),
-        //Some(b"A0") => Some(IndexRange::new(5, 13)),
-        Some(b"H6") => Some(IndexRange::new(5, 13)),
-        Some(b"B7") => Some(IndexRange::new(5, 13)),
+        //Some(b"A3") | Some(b"G7") | Some(b"B6") => Some(5..13),
+        Some(b"H2") | Some(b"C1") => Some(17..23),
+        //Some(b"A0") => Some(5..13),
+        Some(b"H6") => Some(5..13),
+        Some(b"B7") => Some(5..13),
         _ => None,
     }
 }
-
 
 /// (증권A) STK : A001S
 /// (증권C) STK : A002S, A003S, A004S
