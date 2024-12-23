@@ -1160,6 +1160,10 @@ version = "0.1.0"
 dependencies = [
  "common",
  "criterion",
+ "pcap",
+ "pnet",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
