@@ -200,7 +200,7 @@ mod test {
     #[test]
     fn test_3yr_ktbf() -> anyhow::Result<()> {
         // read from multiasset_db.krx_msg.json
-        let file_name = "data/multiasset_db.krx_msg.json";
+        let file_name = "data/krx_msg.json";
         let file_path = format!("{}", file_name);
         let file = std::fs::File::open(file_path).unwrap();
         let reader = std::io::BufReader::new(file);
@@ -230,7 +230,7 @@ mod test {
     #[test]
     fn test_10yr_ktbf() -> anyhow::Result<()> {
         // read from multiasset_db.krx_msg.json
-        let file_name = "data/multiasset_db.krx_msg.json";
+        let file_name = "data/krx_msg.json";
         let file_path = format!("{}", file_name);
         let file = std::fs::File::open(file_path).unwrap();
         let reader = std::io::BufReader::new(file);
@@ -260,7 +260,7 @@ mod test {
     #[test]
     fn test_30yr_ktbf() -> anyhow::Result<()> {
         // read from multiasset_db.krx_msg.json
-        let file_name = "data/multiasset_db.krx_msg.json";
+        let file_name = "data/krx_msg.json";
         let file_path = format!("{}", file_name);
         let file = std::fs::File::open(file_path).unwrap();
         let reader = std::io::BufReader::new(file);

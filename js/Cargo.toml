@@ -12,3 +12,6 @@ pcap = "2.2"
 
 [dev-dependencies]
 criterion = "0.5"
+
+[members]
+["examples/packet"]

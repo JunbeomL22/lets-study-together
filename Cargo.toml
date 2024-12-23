@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "js",
+    "js/examples/packet",
     "dw",
     "common",
     "common/examples/app1"
