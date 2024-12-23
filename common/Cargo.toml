@@ -24,4 +24,9 @@ name = "float_arithematics"
 harness = false
 
 [members]
-["examples/app1"]
+members = [
+    "examples/app1",
+    "dw"
+]
+
+

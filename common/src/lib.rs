@@ -10,3 +10,6 @@ pub use types::{
     UnixNano,
     Real,
 };
+
+pub use mongodb_collection::krx_msg::KrxMsg;
+pub use mongodb_collection::kr_benchmark_bond::KrBenchmarkBond;

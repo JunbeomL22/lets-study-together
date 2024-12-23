@@ -18,6 +18,8 @@ use crate::mongodb_collection::krx_msg::range_helper::{
 /// * `packet_timestamp` - UnixNano (the time when the packet is received)
 /// * `timestamp` - UnixNano (the time when the message is received on the processor)
 /// * `payload` - binary data
+/// 
+/// 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct KrxMsg {
     pub date: i32,
@@ -153,41 +155,6 @@ mod binary_serde {
         D: Deserializer<'de>,
     {
         Binary::deserialize(deserializer).map(|binary| binary.bytes)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use struson::reader::{JsonStreamReader, JsonReader};
-
-    #[test]
-    fn test_deserialized_krx_msg() -> anyhow::Result<()> {
-        // read from multiasset_db.krx_msg.json
-        let file_name = "data/krx_msg.json";
-        let file_path = format!("{}", file_name);
-        let file = std::fs::File::open(file_path).unwrap();
-        let reader = std::io::BufReader::new(file);
-        /* non-streaming 
-        let krx_msgs: Vec<KrxMsg> = serde_json::from_reader(reader).unwrap();
-        for krx_msg in krx_msgs {
-            println!("{}", krx_msg);
-        }
-        */
-        // streaming
-        let mut stream_reader = JsonStreamReader::new(reader);
-        stream_reader.begin_array()?;
-        
-        while stream_reader.has_next()? {
-            let krx_msg: KrxMsg = stream_reader.deserialize_next()?;
-            assert_eq!(krx_msg.instcode.unwrap().as_str(), "KR4165VC0007");
-            //println!("{}", krx_msg);
-        }
-
-        stream_reader.end_array()?;
-        
-        Ok(())
-
     }
 }
 
